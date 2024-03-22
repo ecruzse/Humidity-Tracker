@@ -1,0 +1,1 @@
+** installed pillow for images ** 

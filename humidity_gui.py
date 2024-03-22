@@ -1,12 +1,17 @@
 from tkinter import *
+from PIL import ImageTk, Image
 # import customtkinter
 
 root = Tk()
 root.title('Humidity Checker')
 root.configure(background='#212222')
+# root.iconbitmap('pie_test.png') #app icon in corner
 # root.geometry('700x500')
 
+#testvariables
 test_var = 30
+#end of test vars
+
 LABEL_COLOR = '#9ea1a2'
 BUTTON_COLOR = '#1167b1'
 WARNING_LABEL = '#eed202'
@@ -22,23 +27,32 @@ class humidity_checker_gui:
         TEMP_HUM_VAL = '70%'
         TEMP_DRY_LIMIT = ''
         TEMP_DRY_LIMIT = ''
-   
+
         # functional code begins
+
+        def forget_label(label_name):
+            label_name.grid_forget()
+
         def display_required_action(desired_percentage):
             desired_float_percentage = float(desired_percentage.strip('%'))
             float_dry_value =  float(TEMP_DRY_VAL.strip('%'))
-
+            
             if  float_dry_value > desired_float_percentage:
-                print(f'{TEMP_DRY_VAL} {desired_percentage} success')
+                forget_label(self.add_water)
+                forget_label(self.desired_conditions)
                 self.less_water.grid(row=5, column=1)
             elif float_dry_value < desired_float_percentage:
+                forget_label(self.less_water)
+                forget_label(self.desired_conditions)
                 self.add_water.grid(row=5 ,column=0)
             else:
+                forget_label(self.less_water)
+                forget_label(self.add_water)
                 self.desired_conditions.grid(row=5, column=2)
 
+            print(f'{TEMP_DRY_VAL} {desired_percentage} success')
+
         # functional code ends
-
-
 
         # GUI code starts
       
@@ -46,8 +60,8 @@ class humidity_checker_gui:
         self.soil_humidity = Label(main, text='Soil Humidity', bg=LABEL_COLOR)
         self.soil_humidity.grid(row=1, columnspan=2)
         
-        self.pie_chart = Label(main, text='test pie', bg=LABEL_COLOR)
-        self.pie_chart.grid(row=2, rowspan=2)
+        self.pie_chart_label = Label(main, text='test pie', bg=LABEL_COLOR)
+        self.pie_chart_label.grid(row=2, rowspan=2)
         
         self.soil_percentage_dry = Label(main, text='Dry', bg=LABEL_COLOR)
         self.soil_percentage_dry.grid(row=2, column=1)
@@ -99,6 +113,7 @@ class humidity_checker_gui:
         self.humid_drop_down.config(bg=BUTTON_COLOR)
         self.humid_drop_down.grid(row=7, column=3)
         # GUI code ends
+
 
 
 gui_class = humidity_checker_gui(root)
