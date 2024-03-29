@@ -25,7 +25,7 @@ class humidity_checker_gui:
         self.main = main
         frame = Frame(self.main)
         frame.grid()
-        TEMP_DRY_VAL = '30%'
+        TEMP_DRY_VAL = '70%'
         
         def forget_label(label_name):
             label_name.grid_forget()
@@ -47,13 +47,17 @@ class humidity_checker_gui:
                 forget_label(self.add_water)
                 self.desired_conditions.grid(row=5, column=0)
       
+        # pie chart and percentages
         def display_pie_graph():
             fig = plt.figure(figsize=(3,1), dpi=100)
             fig.set_size_inches(6,3)
+            fig.patch.set_facecolor('black') #changes background of canvas that contains the pie graph 
 
             labels = 'Humid','Dry'
-            sizes = 30,70
+            sizes = 70,30 # CHANGE TO MAKE NON STATIC 
             explode = (0.3,0)
+
+            plt.style.use('ggplot') #changes the pie graph's color using matplotlib
 
             plt.pie(sizes, 
                     explode=explode, 
@@ -70,8 +74,7 @@ class humidity_checker_gui:
             canvasbar = FigureCanvasTkAgg(fig, master=self.main)
             canvasbar.draw()
             canvasbar.get_tk_widget().grid(row=1)
-        # pie chart and percentages
-
+        
         self.soil_humidity = ct.CTkLabel(self.main, text='Soil Humidity')
         self.soil_humidity.grid(row=1, columnspan=2)
     
@@ -86,6 +89,7 @@ class humidity_checker_gui:
         self.desired_conditions = ct.CTkLabel(self.main, text='Desired Conditions', bg_color=BALANCED_LABEL, width=600, font=warning_label_font)
         
         display_pie_graph()
+
         # drop_down down boxes 
         self.limits = ct.CTkLabel(self.main, text='Set Humidity Limit', font=label_font)
         self.limits.grid(row=6, column=0, columnspan=3, sticky='W')
@@ -112,3 +116,9 @@ class humidity_checker_gui:
         
 gui_class = humidity_checker_gui(root)
 root.mainloop()
+
+class collect_info(humidity_checker_gui):
+    def __init__(self, main):
+        super().__init__(self, main)
+
+    
