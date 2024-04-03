@@ -2,13 +2,15 @@ from tkinter import *
 import customtkinter as ct
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt 
+import requests
+import datetime
 
 ct.set_appearance_mode('dark')
 ct.set_default_color_theme('green')
 
 root = ct.CTk()
 root.title('Humidity Checker')
-root.geometry('600x450')
+root.geometry('600x500')
 
 label_font = ct.CTkFont(size=20, family='Arial')
 warning_label_font = ct.CTkFont(size=17, family='Arial', weight='bold')
@@ -20,25 +22,29 @@ WARNING_LABEL_ORANGE = '#ff9966'
 BALANCED_LABEL = '#339900' #00FF00
 
 class humidity_checker_gui:
-    
     def __init__(self, main): #main==root
         self.main = main
+        self.current_time = datetime.datetime.now()
+        self.day_num = self.current_time.day
+        self.humidity_percentage = 30
+        self.response = requests.get('https://api.weather.gov/gridpoints/HGX/65,97/forecast') # National Weather Service API URL for Houston
+        self.humidity_percentage = self.response.json()['properties']['periods'][self.day_num]['relativeHumidity']['value']
+        self.probability_pf_precipitation = self.response.json()['properties']['periods'][self.day_num]['detailedForecast']
         frame = Frame(self.main)
         frame.grid()
-        TEMP_DRY_VAL = '70%'
         
         def forget_label(label_name):
             label_name.grid_forget()
 
         def display_required_action(desired_percentage):
             desired_float_percentage = float(desired_percentage.strip('%'))
-            float_dry_value =  float(TEMP_DRY_VAL.strip('%'))
+            # float_dry_value =  float(TEMP_DRY_VAL.strip('%'))
             
-            if  float_dry_value > desired_float_percentage:
+            if  self.humidity_percentage > desired_float_percentage + 5:
                 forget_label(self.add_water)
                 forget_label(self.desired_conditions)
                 self.less_water.grid(row=5, column=0)
-            elif float_dry_value < desired_float_percentage:
+            elif self.humidity_percentage < desired_float_percentage - 5:
                 forget_label(self.less_water)
                 forget_label(self.desired_conditions)
                 self.add_water.grid(row=5 ,column=0)
@@ -53,7 +59,7 @@ class humidity_checker_gui:
             fig.set_size_inches(6,3)
             fig.patch.set_facecolor('black') #changes background of canvas that contains the pie graph 
 
-            labels = 'Humid','Dry'
+            labels = 'Dry', 'Humid'
             sizes = 70,30 # CHANGE TO MAKE NON STATIC 
             explode = (0.3,0)
 
@@ -84,14 +90,14 @@ class humidity_checker_gui:
 
         self.add_water = ct.CTkLabel(self.main, text='ADD WATER', bg_color=WARNING_LABEL_ORANGE, width=600, font=warning_label_font, text_color='black')
 
-        self.less_water = ct.CTkLabel(self.main, text='LESS WATER', bg_color=WARNING_LABEL_YELLOW, width=600, font=warning_label_font, text_color='black')
+        self.less_water = ct.CTkLabel(self.main, text='TOO HUMID', bg_color=WARNING_LABEL_YELLOW, width=600, font=warning_label_font, text_color='black')
 
         self.desired_conditions = ct.CTkLabel(self.main, text='Desired Conditions', bg_color=BALANCED_LABEL, width=600, font=warning_label_font)
         
         display_pie_graph()
 
         # drop_down down boxes 
-        self.limits = ct.CTkLabel(self.main, text='Set Humidity Limit', font=label_font)
+        self.limits = ct.CTkLabel(self.main, text='Set Desired Humidity Percentage', font=label_font)
         self.limits.grid(row=6, column=0, columnspan=3, sticky='W')
 
         self.clicked = StringVar()
@@ -112,13 +118,16 @@ class humidity_checker_gui:
 
         self.dry_drop_down = ct.CTkOptionMenu(master=root, values=self.percentages, command=display_required_action)
         self.dry_drop_down.grid(row=7, column=0)
-        # GUI code ends
         
+        self.api_forecast = ct.CTkLabel(self.main, text=f'National Weather Service Forecast', font=label_font)
+        self.api_forecast.grid(row=8, column=0, columnspan=3, sticky='W')
+        
+        self.probability_pf_precipitation = ct.CTkLabel(self.main, text=f'{self.probability_pf_precipitation}')
+        self.probability_pf_precipitation.grid(row=9, column=0, columnspan=3, sticky='W')
+        # GUI code ends
+            
 gui_class = humidity_checker_gui(root)
 root.mainloop()
 
-class collect_info(humidity_checker_gui):
-    def __init__(self, main):
-        super().__init__(self, main)
 
-    
+        
