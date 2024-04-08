@@ -40,11 +40,11 @@ class humidity_checker_gui:
             desired_float_percentage = float(desired_percentage.strip('%'))
             # float_dry_value =  float(TEMP_DRY_VAL.strip('%'))
             
-            if  self.humidity_percentage > desired_float_percentage + 5:
+            if  self.humidity_percentage > desired_float_percentage:
                 forget_label(self.add_water)
                 forget_label(self.desired_conditions)
                 self.less_water.grid(row=5, column=0)
-            elif self.humidity_percentage < desired_float_percentage - 5:
+            elif self.humidity_percentage < desired_float_percentage:
                 forget_label(self.less_water)
                 forget_label(self.desired_conditions)
                 self.add_water.grid(row=5 ,column=0)
