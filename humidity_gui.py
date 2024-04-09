@@ -12,9 +12,9 @@ ct.set_default_color_theme('green')
 
 root = ct.CTk()
 root.title('Humidity Checker')
-root.geometry('600x500')
-root.minsize(600,500)
-root.maxsize(800,700)
+root.geometry('600x540')
+root.minsize(600,540)
+root.maxsize(600,700)
 
 label_font = ct.CTkFont(size=20, family='Arial')
 warning_label_font = ct.CTkFont(size=17, family='Arial', weight='bold')
@@ -50,6 +50,7 @@ class humidity_checker_gui:
                 print(self.sensor_humidity)
                 display_pie_graph()
             except Exception as e:
+                display_error()
                 print(f'Error({e})')
         
         def forget_label(label_name):
@@ -109,15 +110,22 @@ class humidity_checker_gui:
             canvasbar.draw()
             canvasbar.get_tk_widget().grid(row=1)
         
-        self.update_button = ct.CTkButton(self.main, text='Update Humidity Status', command=update_humidity_info)
-        self.update_button.grid(row=0, columnspan=3)
+        def display_error():
+            # self.error_label.place(x=50, y=50)
+            # self.informational_label = ct.CTkLabel(self.main, text='Error Retrieving Data, Pleast Try Again ', bg_color='yellow', text_color='black')
+            # self.informational_label.grid(row=1, columnspan=2, padx=50)
+            self.informational_label.configure(text = 'Error Retrieving Data, Please Try Again ')
+            print('placed')
         
-        self.soil_humidity = ct.CTkLabel(self.main, text='Press the "Update Humidity Status Button" to see updated graph')
-        self.soil_humidity.grid(row=1, columnspan=2)
+        self.update_button = ct.CTkButton(self.main, text='Update Humidity Status', command=update_humidity_info)
+        self.update_button.grid(row=0, columnspan=5, padx=20)
+        
+        self.informational_label = ct.CTkLabel(self.main, text='Press the "Update Humidity Status" button to see updated graph', bg_color='yellow', text_color='black')
+        self.informational_label.grid(row=1, columnspan=2, padx=50)
     
         # status, user take action
         self.status = ct.CTkLabel(self.main, text='Humidity Status', font=label_font)
-        self.status.grid(row=4, column=0, columnspan=3, sticky='W')
+        self.status.grid(row=4, column=0, columnspan=3, sticky='W', padx=20)
 
         self.add_water = ct.CTkLabel(self.main, text='ADD WATER', bg_color=WARNING_LABEL_ORANGE, width=600, font=warning_label_font, text_color='black')
 
@@ -129,7 +137,7 @@ class humidity_checker_gui:
 
         # drop_down down boxes 
         self.limits = ct.CTkLabel(self.main, text='Set Desired Humidity Percentage (3 unit tolerance)', font=label_font)
-        self.limits.grid(row=6, column=0, columnspan=3, sticky='W')
+        self.limits.grid(row=6, column=0, columnspan=3, sticky='W', pady=10, padx=20)
 
         self.clicked = StringVar()
         self.clicked.set('Choose Percentage')
@@ -161,10 +169,10 @@ class humidity_checker_gui:
         self.dry_drop_down.grid(row=7, column=0)
         
         self.api_forecast = ct.CTkLabel(self.main, text=f'National Weather Service Forecast', font=label_font)
-        self.api_forecast.grid(row=8, column=0, columnspan=3, sticky='W')
+        self.api_forecast.grid(row=8, column=0, columnspan=3, sticky='W', pady=10, padx=20)
         
         self.probability_pf_precipitation = ct.CTkLabel(self.main, text=f'{self.probability_pf_precipitation}')
-        self.probability_pf_precipitation.grid(row=9, column=0, columnspan=3, sticky='W')
+        self.probability_pf_precipitation.grid(row=9, column=0, columnspan=3, sticky='W', padx=30)
         # GUI code ends
             
 gui_class = humidity_checker_gui(root)
