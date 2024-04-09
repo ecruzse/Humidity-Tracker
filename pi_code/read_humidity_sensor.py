@@ -4,31 +4,49 @@
 import time
 import board
 import adafruit_dht
+import json 
+from flask import Flask
 
 # Sensor data pin is connected to GPIO 4
 # run dir(board) for pin list which maps to GPIO pinout. 
 # ex) GPIO 2 = SDA  or D2 (data 2)
 # ex) GPIO 8 = CEO  or D8 (data 8)
 # ex) GPIO 9 = MISO or D9 (data 9)
+
+app = Flask(__name__)
+
 sensor = adafruit_dht.DHT11(board.D4)
 
+@app.route("/")
+def home():
+    return 'home'
 
-while True:
+@app.route("/metrics")
+def metrics():
+    global sensor
+    humidity_data = {}
     try:
         # Print the values to the serial port
         temperature_c = sensor.temperature
         temperature_f = temperature_c * (9 / 5) + 32
         humidity = sensor.humidity
+    
+        humidity_data["humidity"] = humidity
+        humidity_data["temperature"] = temperature_f
+    
         print("Temp={0:0.1f}ºC, Temp={1:0.1f}ºF, Humidity={2:0.1f}%".format(temperature_c, temperature_f, humidity))
+        # return humidity_data
 
     except RuntimeError as error:
         # Errors happen fairly often, DHT's are hard to read, just keep going
-        print(error.args[0])
-        time.sleep(2.0)
-        continue
-    
-    except Exception as error:
-        sensor.exit()
-        raise error
+        print(f"RuntimeError: {error.args[0]}")
+        # continue
 
-    time.sleep(30.0)
+    except Exception as error:
+        print(f"Error:{str(error)}")
+        sensor.exit()
+        # raise error # do you really want to exit?
+
+    return humidity_data
+    
+app.run('0.0.0.0', 5001)
