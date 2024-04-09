@@ -18,6 +18,6 @@ Based on Adafruit_CircuitPython_DHT Library Example
 
 ## Future Updates ##
 * Change GUI to web app hosted by AWS
-* Adding messges or alerts to one's mobile device when humidity levels are not within acceptable conditions
+* Sending messages and alerts to one's mobile device when humidity levels are not within acceptable conditions
 
 # Diagram #
