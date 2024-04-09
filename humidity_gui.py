@@ -90,7 +90,6 @@ class humidity_checker_gui:
             labels = 'Dry', 'Humid'
             sizes = self.dry, self.sensor_humidity # CHANGE TO MAKE NON STATIC 
             explode = (0.1,0)
-            
 
             plt.style.use('ggplot') #changes the pie graph's color using matplotlib
 
