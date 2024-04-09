@@ -39,14 +39,14 @@ def metrics():
 
     except RuntimeError as error:
         # Errors happen fairly often, DHT's are hard to read, just keep going
-        print(f"RuntimeError: {error.args[0]}")
+        return f"RuntimeError: {error.args[0]}", 503
         # continue
 
     except Exception as error:
-        print(f"Error:{str(error)}")
-        sensor.exit()
+        return f"Error:{str(error)}", 503
+        # sensor.exit()
         # raise error # do you really want to exit?
 
     return humidity_data
     
-app.run('0.0.0.0', 5001)
+app.run('0.0.0.0', port=5001, debug=False)

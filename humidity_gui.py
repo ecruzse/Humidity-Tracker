@@ -5,12 +5,16 @@ import matplotlib.pyplot as plt
 import requests
 import datetime
 
+humidity_api_URL = 'http://192.168.68.79:5001/metrics'
+
 ct.set_appearance_mode('dark')
 ct.set_default_color_theme('green')
 
 root = ct.CTk()
 root.title('Humidity Checker')
 root.geometry('600x500')
+root.minsize(600,500)
+root.maxsize(800,700)
 
 label_font = ct.CTkFont(size=20, family='Arial')
 warning_label_font = ct.CTkFont(size=17, family='Arial', weight='bold')
@@ -28,40 +32,64 @@ class humidity_checker_gui:
         self.day_num = self.current_time.day
         self.humidity_percentage = 30
         self.response = requests.get('https://api.weather.gov/gridpoints/HGX/65,97/forecast') # National Weather Service API URL for Houston
+
         self.humidity_percentage = self.response.json()['properties']['periods'][self.day_num]['relativeHumidity']['value']
         self.probability_pf_precipitation = self.response.json()['properties']['periods'][self.day_num]['detailedForecast']
+        
+        self.humidity_data = 0
+        self.sensor_humidity = 0
+        self.dry = 0
+        
         frame = Frame(self.main)
         frame.grid()
         
+        def update_humidity_info():
+            try:
+                self.humidity_data = requests.get(humidity_api_URL)
+                self.sensor_humidity = self.humidity_data.json()['humidity']
+                print(self.sensor_humidity)
+                display_pie_graph()
+            except Exception as e:
+                print(f'Error({e})')
+        
         def forget_label(label_name):
             label_name.grid_forget()
-
+            
+        def dry_calculator():
+            self.dry = 100 - self.sensor_humidity 
+            
         def display_required_action(desired_percentage):
+            
             desired_float_percentage = float(desired_percentage.strip('%'))
             # float_dry_value =  float(TEMP_DRY_VAL.strip('%'))
             
-            if  self.humidity_percentage > desired_float_percentage:
-                forget_label(self.add_water)
-                forget_label(self.desired_conditions)
-                self.less_water.grid(row=5, column=0)
-            elif self.humidity_percentage < desired_float_percentage:
+            if self.sensor_humidity > desired_float_percentage + 3:
+                    forget_label(self.add_water)
+                    forget_label(self.desired_conditions)
+                    print(' less_water')
+                    self.less_water.grid(row=5, column=0)
+            elif self.sensor_humidity < desired_float_percentage - 3:
+                    forget_label(self.less_water)
+                    forget_label(self.desired_conditions)
+                    print(' add_water')
+                    self.add_water.grid(row=5 ,column=0)
+            elif self.sensor_humidity - desired_float_percentage <= 3 or self.sensor_humidity - desired_float_percentage <= -3:
                 forget_label(self.less_water)
-                forget_label(self.desired_conditions)
-                self.add_water.grid(row=5 ,column=0)
-            else:
-                forget_label(self.less_water)
                 forget_label(self.add_water)
+                print('desired ')
                 self.desired_conditions.grid(row=5, column=0)
-      
+        
         # pie chart and percentages
         def display_pie_graph():
-            fig = plt.figure(figsize=(3,1), dpi=100)
+            fig = plt.figure(figsize=(1,1), dpi=100)
             fig.set_size_inches(6,3)
-            fig.patch.set_facecolor('black') #changes background of canvas that contains the pie graph 
+            fig.patch.set_facecolor('black') #changes background of canvas that contains the pie graph
+            dry_calculator() 
 
             labels = 'Dry', 'Humid'
-            sizes = 70,30 # CHANGE TO MAKE NON STATIC 
-            explode = (0.3,0)
+            sizes = self.dry, self.sensor_humidity # CHANGE TO MAKE NON STATIC 
+            explode = (0.1,0)
+            
 
             plt.style.use('ggplot') #changes the pie graph's color using matplotlib
 
@@ -81,7 +109,10 @@ class humidity_checker_gui:
             canvasbar.draw()
             canvasbar.get_tk_widget().grid(row=1)
         
-        self.soil_humidity = ct.CTkLabel(self.main, text='Soil Humidity')
+        self.update_button = ct.CTkButton(self.main, text='Update Humidity Status', command=update_humidity_info)
+        self.update_button.grid(row=0, columnspan=3)
+        
+        self.soil_humidity = ct.CTkLabel(self.main, text='Press the "Update Humidity Status Button" to see updated graph')
         self.soil_humidity.grid(row=1, columnspan=2)
     
         # status, user take action
@@ -94,25 +125,35 @@ class humidity_checker_gui:
 
         self.desired_conditions = ct.CTkLabel(self.main, text='Desired Conditions', bg_color=BALANCED_LABEL, width=600, font=warning_label_font)
         
-        display_pie_graph()
+        # display_pie_graph()
 
         # drop_down down boxes 
-        self.limits = ct.CTkLabel(self.main, text='Set Desired Humidity Percentage', font=label_font)
+        self.limits = ct.CTkLabel(self.main, text='Set Desired Humidity Percentage (3 unit tolerance)', font=label_font)
         self.limits.grid(row=6, column=0, columnspan=3, sticky='W')
 
         self.clicked = StringVar()
         self.clicked.set('Choose Percentage')
         self.percentages = [    
-                        '0%', 
-                        '10%', 
-                        '20%', 
-                        '30%', 
-                        '40%', 
-                        '50%', 
-                        '60%', 
-                        '70%', 
-                        '80%', 
-                        '90%', 
+                        '0%',
+                        '5%', 
+                        '10%',
+                        '15%',  
+                        '20%',
+                        '25%',  
+                        '30%',
+                        '35%',  
+                        '40%',
+                        '45%',  
+                        '50%',
+                        '55%',  
+                        '60%',
+                        '65%',  
+                        '70%',
+                        '75%',  
+                        '80%',
+                        '85%',  
+                        '90%',
+                        '95%',  
                         '100%'
         ]
 
