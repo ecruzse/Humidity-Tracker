@@ -4,14 +4,16 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt 
 import requests
 import datetime
+import os 
 
-humidity_api_URL = 'http://192.168.68.79:5001/metrics'
+humidity_api_URL = os.getenv('HUMIDITY_API_URL')
+nws_api = 'https://api.weather.gov/gridpoints/HGX/65,97/forecast' # National Weather Service API URL for Houston
 
 ct.set_appearance_mode('dark')
 ct.set_default_color_theme('green')
 
 root = ct.CTk()
-root.title('Humidity Checker')
+root.title('Humidity Checker')  
 root.geometry('600x540')
 root.minsize(600,540)
 root.maxsize(600,700)
@@ -31,7 +33,7 @@ class humidity_checker_gui:
         self.current_time = datetime.datetime.now()
         self.day_num = self.current_time.day
         self.humidity_percentage = 30
-        self.response = requests.get('https://api.weather.gov/gridpoints/HGX/65,97/forecast') # National Weather Service API URL for Houston
+        self.response = requests.get(nws_api) 
 
         self.humidity_percentage = self.response.json()['properties']['periods'][self.day_num]['relativeHumidity']['value']
         self.probability_pf_precipitation = self.response.json()['properties']['periods'][self.day_num]['detailedForecast']
