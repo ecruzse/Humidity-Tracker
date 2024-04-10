@@ -1,3 +1,4 @@
 .env 
 .DS_*
 .pass
+.python-version
