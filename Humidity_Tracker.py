@@ -21,8 +21,9 @@ ct.set_default_color_theme('green')
 root = ct.CTk()
 root.title('Humidity Tracker')
 root.geometry('600x540')
-root.minsize(600,540)
-root.maxsize(600,700)
+root.minsize(700,540)
+root.maxsize(800,800)
+root.resizable(False,False)
 
 class HumidityTracker():
     def __init__(self, main) -> None:
@@ -32,7 +33,7 @@ class HumidityTracker():
         self.WARNING_LABEL_ORANGE = '#ff9966'
         self.BALANCED_LABEL = '#339900' #00FF00
         self.LABEL_FONT = ct.CTkFont(size=20, family='Arial')
-        self.warning_label_font = ct.CTkFont(size=17, family='Arial', weight='bold')
+        self.WARNING_LABEL_FONT = ct.CTkFont(size=17, family='Arial', weight='bold')
         
         self.warning_frame = ct.CTkFrame(main, width=600, height=25)
         self.warning_frame.pack()
@@ -40,23 +41,28 @@ class HumidityTracker():
         self.pie_graph_frame = ct.CTkFrame(main, width=400, height=300)
         self.pie_graph_frame.pack()
         
-        self.user_information_frame = ct.CTkFrame(main)
-        self.user_information_frame.pack()
+        self.user_information_frame = ct.CTkFrame(main, width=500)
+        self.user_information_frame.pack(fill=BOTH)
         
         self.desired_humidity = 0
         self.sensor_humidity = Data().humidity
         
         self.forecast = Data().get_forecast()
-
         
-        self.create_PieGraph() 
         self.create_widgets()
+        self.update_humidity_status()
+        
+        # try:
+        #     self.error_label.forget()
+        #     self.create_PieGraph() 
+        # except Exception as e:
+        #     self.error_label.pack()
         
     def create_PieGraph(self):
         fig = plt.figure(figsize=(1,1), dpi=100)
         fig.set_size_inches(6,3)
         fig.patch.set_facecolor('black') #changes background of canvas that contains the pie graph
-        
+        self.error_label.forget()
         labels = 'Dry','Humid'
         sizes = (100 - self.sensor_humidity), self.sensor_humidity
         # sizes = 40, 60
@@ -78,9 +84,10 @@ class HumidityTracker():
 
         canvasbar = FigureCanvasTkAgg(fig, master=self.pie_graph_frame)
         canvasbar.draw()
-        canvasbar.get_tk_widget().pack(pady=15)
+        canvasbar.get_tk_widget().grid(row=1)
     
     def create_widgets(self):
+        self.error_label = ct.CTkLabel(self.pie_graph_frame, text='Error Retrieving Data. Please Try Again.', width=100, height=200)
         
         self.update_button = ct.CTkButton(self.user_information_frame, text='Update Humidity Status', command=self.update_humidity_status)
         self.limits = ct.CTkLabel(self.user_information_frame, text='Set Desired Humidity Percentage (3 unit tolerance)', font=self.LABEL_FONT)
@@ -109,16 +116,16 @@ class HumidityTracker():
                     '95%',  
                     '100%'    
                 ]
+        
         self.nws_label = ct.CTkLabel(self.user_information_frame, text=f'National Weather Service Forecast', font=self.LABEL_FONT)
-
-        self.add_water = ct.CTkLabel(self.warning_frame, text='ADD WATER', bg_color=self.WARNING_LABEL_ORANGE, width=600, font=self.warning_label_font, text_color='black')
-        self.less_water = ct.CTkLabel(self.warning_frame, text='TOO HUMID', bg_color=self.WARNING_LABEL_YELLOW, width=600, font=self.warning_label_font, text_color='black')
-        self.desired_conditions = ct.CTkLabel(self.warning_frame, text='Desired Conditions', bg_color=self.BALANCED_LABEL, width=600, font=self.warning_label_font)
+        self.forecast_label = ct.CTkLabel(self.user_information_frame, text=f'{self.forecast}')
+        
+        self.add_water = ct.CTkLabel(self.warning_frame, text='ADD WATER', bg_color=self.WARNING_LABEL_ORANGE, width=600, font=self.WARNING_LABEL_FONT, text_color='black')
+        self.less_water = ct.CTkLabel(self.warning_frame, text='TOO HUMID', bg_color=self.WARNING_LABEL_YELLOW, width=600, font=self.WARNING_LABEL_FONT, text_color='black')
+        self.desired_conditions = ct.CTkLabel(self.warning_frame, text='Desired Conditions', bg_color=self.BALANCED_LABEL, width=600, font=self.WARNING_LABEL_FONT)
         
         self.dry_drop_down = ct.CTkOptionMenu(self.user_information_frame, values=self.percentages, command=self.display_required_action)
-        # self.dry_drop_down = ct.CTkOptionMenu(self.user_information_frame, values=self.percentages)
-        self.forecast_label = ct.CTkLabel(self.user_information_frame, text=f'{self.forecast}')
-
+        
         # status, user take action
         self.update_button.pack()
         
@@ -131,8 +138,6 @@ class HumidityTracker():
         
     def display_required_action(self, desired_humidity_percentage):
         self.desired_humidity = float(desired_humidity_percentage.strip('%'))
-        # self.desired_humidity = 60
-        self.sensor_humidity = 40
         
         if self.sensor_humidity > self.desired_humidity + 3:
             self.add_water.forget()
@@ -151,11 +156,12 @@ class HumidityTracker():
             self.desired_conditions.pack()       
         
     def update_humidity_status(self):
-        self.sensor_humidity = Data().humidity
-        # self.pie_graph_frame.pack_forget()
-        # self.create_PieGraph() 
-        # self.pie_graph_frame.pack()
-        print('updated status')
+        try:
+            self.error_label.forget()
+            self.sensor_humidity = Data().humidity
+            self.create_PieGraph() 
+        except Exception as e:
+            self.error_label.pack()
         
 class Data:
     def __init__(self) -> None:
@@ -194,10 +200,15 @@ class Data:
         return humidity
         
     def get_forecast(self):
-        response = requests.get(nws_api) 
-        current_time = datetime.datetime.now()
-        forecast = response.json()['properties']['periods'][int(current_time.day / 14 )]['detailedForecast']
-        return forecast
+        try:
+            response = requests.get(nws_api) 
+            current_time = datetime.datetime.now()
+            forecast = response.json()['properties']['periods'][int(current_time.day / 14 )]['detailedForecast']
+            return forecast
+        except Exception as e:
+            logging.error(traceback.format_exc())
     
+
+
 HumidityTrackerApp = HumidityTracker(root)
 root.mainloop()
