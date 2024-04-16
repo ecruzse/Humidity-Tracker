@@ -1,5 +1,6 @@
 # Complete Project Details: https://RandomNerdTutorials.com/raspberry-pi-dht11-dht22-python/
 # Based on Adafruit_CircuitPython_DHT Library Example
+# apt install python3-libgpiod
 
 import time
 import board
