@@ -9,7 +9,6 @@ import logging
 import traceback
 from requests import HTTPError
 
-
 APP_LEVEL = os.getenv("ENV", "DEV")
 logging.basicConfig(level=logging.DEBUG if APP_LEVEL == "DEV" else logging.INFO)
 
@@ -21,6 +20,9 @@ BUTTON_COLOR = '#1167b1'
 WARNING_LABEL_YELLOW = '#eed202'
 WARNING_LABEL_ORANGE = '#ff9966'
 BALANCED_LABEL = '#339900' #00FF00
+# text design
+# LABEL_FONT= ct.CTkFont(size=20, family='Arial')
+# WARNING_LABEL_FONT  = ct.CTkFont(size=17, family='Arial', weight='bold')
 
 ct.set_appearance_mode('dark')
 ct.set_default_color_theme('green')
@@ -37,48 +39,31 @@ class App(ct.CTk):
         
         # Data Retrieval
         self.humidity = Data().humidity
-        
+        self.forecast = Data().get_forecast()
         
         # widgets
-        self.update_data = update_data(self)
-        self.pie_graph = pie_graph(self)
-        self.pie_graph.create_pie_graph(self.humidity)
-        self.data_status = data_status(self)
-        self.user_information = user_information(self)
+        self.PieGraph = PieGraph(self)
+        self.PieGraph.create_PieGraph(self.humidity)
+        
+        self.UserInformation = UserInformation(self)
+        self.UserInformation.create_widgets(self.forecast)
 
         # run app
         self.mainloop()
- 
-class update_data(ct.CTkFrame):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.pack()
-        self.update_button = ct.CTkButton(self, text='Update Humidity Status')
-        self.update_button.pack()
     
-class data_status(ct.CTkFrame):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.pack()
-        
-        self.informational_label = ct.CTkLabel(self, text='Press the "Update Humidity Status" button to see updated graph', bg_color='yellow', text_color='black')        
-        self.informational_label.pack()    
-    
-class pie_graph(ct.CTkFrame):
+class PieGraph(ct.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent)
         self.pack()    
     
-    def create_pie_graph(self, humidity):
+    def create_PieGraph(self, humidity):
         fig = plt.figure(figsize=(6,3), dpi=100)
         fig.set_size_inches(2,1)
         fig.patch.set_facecolor('black') #changes background of canvas that contains the pie graph
-        # dry_calculator() 
-        self.dry = 100 - humidity
+        
         labels = 'Dry','Humid'
-        sizes = self.dry, humidity
+        sizes = (100 - humidity), humidity
         # sizes = 40, 60
-        # sizes = humidity
         explode = (0.1,0)
 
         plt.style.use('ggplot') #changes the pie graph's color using matplotlib
@@ -98,36 +83,49 @@ class pie_graph(ct.CTkFrame):
         canvasbar = FigureCanvasTkAgg(fig, master=self)
         canvasbar.draw()
         canvasbar.get_tk_widget().pack()
-
-class user_information(ct.CTkFrame):
+       
+class UserInformation(ct.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent)
         
-        # text design
-        self.label_font = ct.CTkFont(size=20, family='Arial')
-        self.warning_label_font = ct.CTkFont(size=17, family='Arial', weight='bold')
-        self.response = requests.get(nws_api) 
-        self.current_time = datetime.datetime.now()
-        self.day_num = self.current_time.day            
-        self.humidity_data = 0
-        self.sensor_humidity = 0
-        self.dry = 0
+        self.LABEL_FONT= ct.CTkFont(size=20, family='Arial')
+        self.WARNING_LABEL_FONT  = ct.CTkFont(size=17, family='Arial', weight='bold')
         #TODO: validate if this is where this goes...
-        # self.nws_forecast()
-        self.create_widgets()    
-        self.display_widgets()
         self.pack()
     
-    # def nws_forecast(self):
-    #     self.nws_precipitation = self.response.json()['properties']['periods'][self.day_num]['detailedForecast']
-    
-    def create_widgets(self):
+        self.informational_label = ct.CTkLabel(self, text='Press the "Update Humidity Status" button to see updated graph', bg_color='yellow', text_color='black')        
+        self.informational_label.pack()    
+ 
+        self.add_water = ct.CTkLabel(self, text='ADD WATER', bg_color=WARNING_LABEL_ORANGE, width=600, font=self.WARNING_LABEL_FONT , text_color='black')
+        self.less_water = ct.CTkLabel(self, text='TOO HUMID', bg_color=WARNING_LABEL_YELLOW, width=600, font=self.WARNING_LABEL_FONT , text_color='black')
+        self.desired_conditions = ct.CTkLabel(self, text='Desired Conditions', bg_color=BALANCED_LABEL, width=600, font=self.WARNING_LABEL_FONT )
+
+    def forget_label(label):
+        label.forget()
         
-        self.status = ct.CTkLabel(self, text='Humidity Status', font=self.label_font)
-        self.add_water = ct.CTkLabel(self, text='ADD WATER', bg_color=WARNING_LABEL_ORANGE, width=600, font=self.warning_label_font, text_color='black')
-        self.less_water = ct.CTkLabel(self, text='TOO HUMID', bg_color=WARNING_LABEL_YELLOW, width=600, font=self.warning_label_font, text_color='black')
-        self.desired_conditions = ct.CTkLabel(self, text='Desired Conditions', bg_color=BALANCED_LABEL, width=600, font=self.warning_label_font)
-        self.limits = ct.CTkLabel(self, text='Set Desired Humidity Percentage (3 unit tolerance)', font=self.label_font)
+    def display_required_action(self, desired_humidity):
+        desired_humidity = float(desired_humidity.strip('%'))
+            
+        if App.humidity > desired_humidity + 3:
+            UserInformation.forget_label(self.add_water)
+            UserInformation.forget_label(self.desired_conditions)
+            print(' less_water')
+            self.less_water.pack()
+        elif App.humidity < desired_humidity - 3:
+            UserInformation.forget_label(self.less_water)
+            UserInformation.forget_label(self.desired_conditions)
+            print(' add_water')
+            self.add_water.pack()
+        elif App.humidity - desired_humidity <= 3 or self.humidity - desired_humidity <= -3:
+            UserInformation.forget_label(self.less_water)
+            UserInformation.forget_label(self.add_water)
+            print('desired ')
+            self.desired_conditions.pack()
+            
+    def create_widgets(self, forecast=None):
+        
+        self.update_button = ct.CTkButton(self, text='Update Humidity Status')
+        self.limits = ct.CTkLabel(self, text='Set Desired Humidity Percentage (3 unit tolerance)', font=self.LABEL_FONT)
         self.clicked = StringVar()
         self.clicked.set('Choose Percentage')
         self.percentages = [
@@ -153,33 +151,28 @@ class user_information(ct.CTkFrame):
                     '95%',  
                     '100%'    
                 ]
-        self.api_forecast = ct.CTkLabel(self, text=f'National Weather Service Forecast', font=self.label_font)
+        self.nws_label = ct.CTkLabel(self, text=f'National Weather Service Forecast', font=self.LABEL_FONT)
         
-        # self.dry_drop_down = ct.CTkOptionMenu(master=root, values=self.percentages, command=display_required_action)
-        self.dry_drop_down = ct.CTkOptionMenu(self, values=self.percentages)
-        
-        # self.probability_of_precipitation = ct.CTkLabel(self, text=f'{self.nws_precipitation}')
-        # self.probability_of_precipitation = ct.CTkLabel(self, text=f'precip prob')
-
-    def display_widgets(self):
+        self.dry_drop_down = ct.CTkOptionMenu(self, values=self.percentages, command=self.display_required_action)
+        # self.dry_drop_down = ct.CTkOptionMenu(self, values=self.percentages)
+        self.forecast_label = ct.CTkLabel(self, text=f'{forecast}')
 
         # status, user take action
-        self.status.pack()
-
-        self.api_forecast.pack()
-        # display_pie_graph()
         
-        # self.probability_of_precipitation.pack()
+        self.update_button.pack()
+        
+        self.nws_label.pack()
+        self.forecast_label.pack()
 
         # drop_down down boxes 
         self.limits.pack()
         self.dry_drop_down.pack()
-        
+                
 class Data:
     def __init__(self) -> None:
         self._last_update = None
         self.cached_humidity = None
-        self.setUp()
+        # self.setUp()
 
     def setUp(self):
         self.cached_humidity = self._get_humidity()
@@ -200,7 +193,7 @@ class Data:
             # lazy logging. Let logger format str *only* if called. Avoiding work
             logging.debug("Received data: %s", humidity)
             self._last_update = datetime.datetime.now()
-            # display_pie_graph()
+            # display_PieGraph()
         except HTTPError:
             error_code = getattr(response, "status_code", 500)
             reason = getattr(response, "reason", "Unknown")
@@ -210,7 +203,13 @@ class Data:
             # display_error()
             logging.error(traceback.format_exc())
         return humidity
-    
+        
+    def get_forecast(self):
+        response = requests.get(nws_api) 
+        current_time = datetime.datetime.now()
+        forecast = response.json()['properties']['periods'][int(current_time.day / 14 )]['detailedForecast']
+        return forecast
+        
 App()
 
 # from time import sleep
