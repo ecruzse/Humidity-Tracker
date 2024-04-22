@@ -8,12 +8,17 @@ import os
 import logging
 import traceback
 from requests import HTTPError
+import mysql.connector 
 
 APP_LEVEL = os.getenv("ENV", "DEV")
 logging.basicConfig(level=logging.DEBUG if APP_LEVEL == "DEV" else logging.INFO)
 
-humidity_api_URL = os.getenv('HUMIDITY_API_URL')
-nws_api = 'https://api.weather.gov/gridpoints/HGX/65,97/forecast' # National Weather Service API URL for Houston
+HUMIDITY_API_URL = os.getenv('HUMIDITY_API_URL')
+NWS_API = os.getenv('NWS_API') # National Weather Service API URL for Houston
+HOST = os.getenv("HOST")
+PORT = int(os.getenv("PORT"))
+USER = os.getenv("USER")
+PASW = os.getenv("PASW")
 
 ct.set_appearance_mode('dark')
 ct.set_default_color_theme('green')
@@ -23,7 +28,7 @@ root.title('Humidity Tracker')
 root.geometry('600x540')
 root.minsize(700,540)
 root.maxsize(800,800)
-root.resizable(False,False)
+# root.resizable(False,False)
 
 class HumidityTracker():
     def __init__(self, main) -> None:
@@ -182,33 +187,95 @@ class Data:
         humidity = self.cached_humidity
         response = None
         try:
-            response = requests.get(humidity_api_URL)
+            response = requests.get(HUMIDITY_API_URL)
             response.raise_for_status()
             humidity = response.json()['humidity'] # separated to catch response errors
             # lazy logging. Let logger format str *only* if called. Avoiding work
             logging.debug("Received data: %s", humidity)
             self._last_update = datetime.datetime.now()
-            # display_PieGraph()
+            
         except HTTPError:
             error_code = getattr(response, "status_code", 500)
             reason = getattr(response, "reason", "Unknown")
             text = getattr(response, "text", None)
             logging.error("HTTP Error: %s %s %s", error_code, reason, text)
+            
         except Exception as e:
             # display_error()
             logging.error(traceback.format_exc())
         return humidity
+    
+    def get_temperature(self):
+        try:
+            response = requests.get(HUMIDITY_API_URL)
+            temperature = response.json()['temperature']
+        except:
+            logging.error(traceback.format_exc())
+        return temperature
         
     def get_forecast(self):
         try:
-            response = requests.get(nws_api) 
+            response = requests.get(NWS_API) 
             current_time = datetime.datetime.now()
             forecast = response.json()['properties']['periods'][int(current_time.day / 14 )]['detailedForecast']
             return forecast
         except Exception as e:
             logging.error(traceback.format_exc())
+
+
+class db_communication():
     
+    def __init__(self) -> None:
+        # super().__init__()
+        self.temp = 0
+        self.date = ''
+        self.condition = ''
+        self.database = 0
+        self.QUERY = ''
+    
+    def connect_to_database(self):    
+        self.database = mysql.connector.connect(
+        host=HOST,
+        port=PORT,
+        user=USER,
+        password=PASW,
+        database='sensor_data'
+        # buffered=True,
+        )
+        data = {}
+        # self.QUERY = f'INSERT INTO sensor_metrics (temperature, humidity, day, condition) VALUES ({self.temp}, {self.sensor_humidity}, {self.date}, {self.condition});'
+        self.QUERY = "INSERT INTO `sensor_data`.`sensor_metrics` (`temperature`, `humidity`, `day`, `condition`) VALUES ('21', '22.2', '2022-10-12', 'too humid');"
+
+        with self.database.cursor(dictionary=True) as cursor:
+            cursor.execute(self.QUERY)
+            self.database.commit()
+            # data = cursor.fetchall()
+        
+        # self.database.close()
+        return data
+
+database = mysql.connector.connect(
+    host=HOST,
+    port=PORT,
+    user=USER,
+    password=PASW,
+    database='sensor_data'
+    # buffered=True,
+)
+ 
+data = {}
+# self.QUERY = f'INSERT INTO sensor_metrics (temperature, humidity, day, condition) VALUES ({self.temp}, {self.sensor_humidity}, {self.date}, {self.condition});'
+QUERY = "INSERT INTO `sensor_data`.`sensor_metrics` (`temperature`, `humidity`, `day`, `condition`) VALUES ('21', '22.2', '2022-10-12', 'too humid');"
+
+with database.cursor(dictionary=True) as cursor:
+    cursor.execute(QUERY)
+    database.commit()
+    data = cursor.fetchall()
+    print(data)
+    # self.database.close()
 
 
-HumidityTrackerApp = HumidityTracker(root)
-root.mainloop()
+
+# HumidityTrackerApp = HumidityTracker(root)
+# root.mainloop()
+    

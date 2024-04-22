@@ -3,6 +3,7 @@
 # apt install python3-libgpiod
 
 import time
+from datetime import date
 import board
 import adafruit_dht
 import json 
@@ -31,12 +32,15 @@ def metrics():
         temperature_c = sensor.temperature
         temperature_f = temperature_c * (9 / 5) + 32
         humidity = sensor.humidity
-    
+        day = str(date.today())
+        
         humidity_data["humidity"] = humidity
         humidity_data["temperature"] = temperature_f
+        humidity_data["day"] = day
     
-        print("Temp={0:0.1f}ºC, Temp={1:0.1f}ºF, Humidity={2:0.1f}%".format(temperature_c, temperature_f, humidity))
+        # print("Temp={0:0.1f}ºC, Temp={1:0.1f}ºF, Humidity={2:0.1f}%".format(temperature_c, temperature_f, humidity, day))
         # return humidity_data
+        print(f'Temp={temperature_c}ºC, Temp={temperature_f}ºF, Humidity={humidity}%, Date={day}')
 
     except RuntimeError as error:
         # Errors happen fairly often, DHT's are hard to read, just keep going
