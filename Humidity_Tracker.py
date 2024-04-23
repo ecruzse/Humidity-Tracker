@@ -170,7 +170,7 @@ class HumidityTracker():
     def send_database_data(self):
         data_list = []
         data_list = [self.temperature, self.sensor_humidity, self.date, self.condition]   
-        database_communication.connect_to_database(data_list)  
+        DatabaseCommunication.connect_to_database(data_list)  
             
     def update_humidity_status(self):
         try:
@@ -246,7 +246,7 @@ class Data:
         except Exception as e:
             logging.error(traceback.format_exc())
 
-class database_communication:
+class DatabaseCommunication:
     @staticmethod
     def connect_to_database(data_list):   
         database = mysql.connector.connect(
