@@ -15,10 +15,10 @@ logging.basicConfig(level=logging.DEBUG if APP_LEVEL == "DEV" else logging.INFO)
 
 HUMIDITY_API_URL = os.getenv('HUMIDITY_API_URL')
 NWS_API = os.getenv('NWS_API') # National Weather Service API URL for Houston
-HOST = os.getenv("HOST")
-PORT = int(os.getenv("PORT"))
-USER = os.getenv("USER")
-PASW = os.getenv("PASW")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = int(os.getenv("DB_PORT"))
+DB_USER = os.getenv("DB_USER")
+DB_PASW = os.getenv("DB_PASW")
 
 ct.set_appearance_mode('dark')
 ct.set_default_color_theme('green')
@@ -48,14 +48,18 @@ class HumidityTracker():
         
         self.user_information_frame = ct.CTkFrame(main, width=500)
         self.user_information_frame.pack(fill=BOTH)
+        self.condition = 'Not Set'
         
         self.desired_humidity = 0
         self.sensor_humidity = Data().humidity
         
         self.forecast = Data().get_forecast()
+        self.date = Data().get_date()
+        self.temperature = Data().get_temperature()
         
         self.create_widgets()
-        self.update_humidity_status()
+        self.update_humidity_status()        
+        # self.connect = db_communication().connect_to_database()
         
         # try:
         #     self.error_label.forget()
@@ -136,6 +140,7 @@ class HumidityTracker():
         
         self.nws_label.pack()
         self.forecast_label.pack()
+        self.condition=''
 
         # drop_down down boxes 
         self.limits.pack()
@@ -147,26 +152,36 @@ class HumidityTracker():
         if self.sensor_humidity > self.desired_humidity + 3:
             self.add_water.forget()
             self.desired_conditions.forget()
+            self.condition = 'TOO HUMID'
             print(' less_water')
             self.less_water.pack()
         elif self.sensor_humidity < self.desired_humidity - 3:
             self.less_water.forget()
             self.desired_conditions.forget()
+            self.condition = 'TOO DRY'
             print(' add_water')
             self.add_water.pack()
         elif self.sensor_humidity - self.desired_humidity <= 3 or self.sensor_humidity - self.desired_humidity <= -3:
             self.less_water.forget()
             self.add_water.forget()
-            print('desired ')
+            self.condition = 'Desired Conditions'
+            print('Desired Conditions')
             self.desired_conditions.pack()       
         
     def update_humidity_status(self):
+        data_list = []
         try:
             self.error_label.forget()
             self.sensor_humidity = Data().humidity
             self.create_PieGraph() 
+            
         except Exception as e:
             self.error_label.pack()
+            
+        print(f'date: {self.date}') 
+        data_list = [self.temperature, self.sensor_humidity, self.date, self.condition]
+        print(data_list)
+        connect_to_database(data_list)
         
 class Data:
     def __init__(self) -> None:
@@ -206,12 +221,21 @@ class Data:
         return humidity
     
     def get_temperature(self):
+        temperature = {}
         try:
             response = requests.get(HUMIDITY_API_URL)
             temperature = response.json()['temperature']
         except:
             logging.error(traceback.format_exc())
         return temperature
+        
+    def get_date(self):
+        try:
+            response = requests.get(HUMIDITY_API_URL)
+            date = response.json()['day']
+        except:
+            logging.error(traceback.format_exc())
+        return date
         
     def get_forecast(self):
         try:
@@ -222,60 +246,29 @@ class Data:
         except Exception as e:
             logging.error(traceback.format_exc())
 
-
-class db_communication():
-    
-    def __init__(self) -> None:
-        # super().__init__()
-        self.temp = 0
-        self.date = ''
-        self.condition = ''
-        self.database = 0
-        self.QUERY = ''
-    
-    def connect_to_database(self):    
-        self.database = mysql.connector.connect(
-        host=HOST,
-        port=PORT,
-        user=USER,
-        password=PASW,
-        database='sensor_data'
-        # buffered=True,
-        )
-        data = {}
-        # self.QUERY = f'INSERT INTO sensor_metrics (temperature, humidity, day, condition) VALUES ({self.temp}, {self.sensor_humidity}, {self.date}, {self.condition});'
-        self.QUERY = "INSERT INTO `sensor_data`.`sensor_metrics` (`temperature`, `humidity`, `day`, `condition`) VALUES ('21', '22.2', '2022-10-12', 'too humid');"
-
-        with self.database.cursor(dictionary=True) as cursor:
-            cursor.execute(self.QUERY)
-            self.database.commit()
-            # data = cursor.fetchall()
-        
-        # self.database.close()
-        return data
-
 database = mysql.connector.connect(
-    host=HOST,
-    port=PORT,
-    user=USER,
-    password=PASW,
+    host=DB_HOST,
+    port=DB_PORT,
+    user=DB_USER,
+    password=DB_PASW,
     database='sensor_data'
     # buffered=True,
-)
- 
-data = {}
-# self.QUERY = f'INSERT INTO sensor_metrics (temperature, humidity, day, condition) VALUES ({self.temp}, {self.sensor_humidity}, {self.date}, {self.condition});'
-QUERY = "INSERT INTO `sensor_data`.`sensor_metrics` (`temperature`, `humidity`, `day`, `condition`) VALUES ('21', '22.2', '2022-10-12', 'too humid');"
+    )
+    
+def connect_to_database(data_list):   
+    temperature = Data().get_temperature()
+    sensor_humidity = Data().humidity
+    date = Data().get_date()
+    condition = 'TOO DRY'
+    
+    # QUERY = f"INSERT INTO sensor_metrics (`temperature`, `humidity`, `day`, `condition`) VALUES ('{temperature}', '{sensor_humidity}', '{date}', '{condition}');"
+    QUERY = f"INSERT INTO sensor_metrics (`temperature`, `humidity`, `day`, `condition`) VALUES ('{data_list[0]}', '{data_list[1]}', '{data_list[2]}', '{data_list[3]}');"
+    with database.cursor(dictionary=True) as cursor:
+        cursor.execute(QUERY)
+        database.commit()
+        data = cursor.fetchall()
+        print('updated db')
 
-with database.cursor(dictionary=True) as cursor:
-    cursor.execute(QUERY)
-    database.commit()
-    data = cursor.fetchall()
-    print(data)
-    # self.database.close()
-
-
-
-# HumidityTrackerApp = HumidityTracker(root)
-# root.mainloop()
+HumidityTrackerApp = HumidityTracker(root)
+root.mainloop()
     
