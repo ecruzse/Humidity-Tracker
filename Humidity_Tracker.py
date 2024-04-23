@@ -174,15 +174,12 @@ class HumidityTracker():
             self.error_label.forget()
             self.sensor_humidity = Data().humidity
             self.create_PieGraph() 
+            data_list = [self.temperature, self.sensor_humidity, self.date, self.condition]            
+            database_communication.connect_to_database(data_list)
             
         except Exception as e:
             self.error_label.pack()
-            
-        print(f'date: {self.date}') 
-        data_list = [self.temperature, self.sensor_humidity, self.date, self.condition]
-        print(data_list)
-        connect_to_database(data_list)
-        
+           
 class Data:
     def __init__(self) -> None:
         self._last_update = None
@@ -246,28 +243,25 @@ class Data:
         except Exception as e:
             logging.error(traceback.format_exc())
 
-database = mysql.connector.connect(
-    host=DB_HOST,
-    port=DB_PORT,
-    user=DB_USER,
-    password=DB_PASW,
-    database='sensor_data'
-    # buffered=True,
-    )
-    
-def connect_to_database(data_list):   
-    temperature = Data().get_temperature()
-    sensor_humidity = Data().humidity
-    date = Data().get_date()
-    condition = 'TOO DRY'
-    
-    # QUERY = f"INSERT INTO sensor_metrics (`temperature`, `humidity`, `day`, `condition`) VALUES ('{temperature}', '{sensor_humidity}', '{date}', '{condition}');"
-    QUERY = f"INSERT INTO sensor_metrics (`temperature`, `humidity`, `day`, `condition`) VALUES ('{data_list[0]}', '{data_list[1]}', '{data_list[2]}', '{data_list[3]}');"
-    with database.cursor(dictionary=True) as cursor:
-        cursor.execute(QUERY)
-        database.commit()
-        data = cursor.fetchall()
-        print('updated db')
+class database_communication:
+    @staticmethod
+    def connect_to_database(data_list):   
+        database = mysql.connector.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASW,
+            database='sensor_data'
+            # buffered=True,
+        )
+        query = f"INSERT INTO sensor_metrics (`temperature`, `humidity`, `day`, `condition`) VALUES ('{data_list[0]}', '{data_list[1]}', '{data_list[2]}', '{data_list[3]}');"
+        
+        with database.cursor(dictionary=True) as cursor:
+            cursor.execute(query)
+            database.commit()
+            # data = cursor.fetchall()
+            print(data_list)
+            print('updated db')
 
 HumidityTrackerApp = HumidityTracker(root)
 root.mainloop()
