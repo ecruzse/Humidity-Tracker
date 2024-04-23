@@ -160,7 +160,7 @@ class HumidityTracker():
             self.condition = 'TOO DRY'
             print(' add_water')
             self.add_water.pack()
-        elif self.sensor_humidity - self.desired_humidity <= 3 or self.sensor_humidity - self.desired_humidity >= -3:
+        elif abs(self.sensor_humidity - self.desired_humidity) <= 3: 
             self.less_water.forget()
             self.add_water.forget()
             self.condition = 'Desired Conditions'
