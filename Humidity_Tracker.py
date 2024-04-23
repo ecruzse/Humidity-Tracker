@@ -140,8 +140,7 @@ class HumidityTracker():
         
         self.nws_label.pack()
         self.forecast_label.pack()
-        self.condition=''
-
+    
         # drop_down down boxes 
         self.limits.pack()
         self.dry_drop_down.pack()
@@ -161,25 +160,28 @@ class HumidityTracker():
             self.condition = 'TOO DRY'
             print(' add_water')
             self.add_water.pack()
-        elif self.sensor_humidity - self.desired_humidity <= 3 or self.sensor_humidity - self.desired_humidity <= -3:
+        elif self.sensor_humidity - self.desired_humidity <= 3 or self.sensor_humidity - self.desired_humidity >= -3:
             self.less_water.forget()
             self.add_water.forget()
             self.condition = 'Desired Conditions'
             print('Desired Conditions')
             self.desired_conditions.pack()       
         
-    def update_humidity_status(self):
+    def send_database_data(self):
         data_list = []
+        data_list = [self.temperature, self.sensor_humidity, self.date, self.condition]   
+        database_communication.connect_to_database(data_list)  
+            
+    def update_humidity_status(self):
         try:
             self.error_label.forget()
             self.sensor_humidity = Data().humidity
             self.create_PieGraph() 
-            data_list = [self.temperature, self.sensor_humidity, self.date, self.condition]            
-            database_communication.connect_to_database(data_list)
-            
+            self.send_database_data()
         except Exception as e:
+            # self.error_label.grid(row=1)
             self.error_label.pack()
-           
+        
 class Data:
     def __init__(self) -> None:
         self._last_update = None
@@ -227,6 +229,7 @@ class Data:
         return temperature
         
     def get_date(self):
+        date = ''
         try:
             response = requests.get(HUMIDITY_API_URL)
             date = response.json()['day']
