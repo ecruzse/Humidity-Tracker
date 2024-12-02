@@ -21,3 +21,4 @@ Based on Adafruit_CircuitPython_DHT Library Example
 * Sending messages and alerts to one's mobile device when humidity levels are not within acceptable conditions
 
 # Diagram #
+![Alt text](HumidityAppDiagram.svg "a title")
